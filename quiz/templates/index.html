@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App</title>
+</head>
+<body>
+    <h1>Welcome to the Quiz!</h1>
+    <button id="start-btn">Start Quiz</button>
+    <div id="question-container" style="display:none;">
+        <h2 id="question-text"></h2>
+        <div id="options"></div>
+        <button id="submit-btn">Submit Answer</button>
+    </div>
+    <div id="result-container" style="display:none;">
+        <h3>Quiz Completed!</h3>
+        <p id="score"></p>
+    </div>
+
+    <script>
+        document.getElementById('start-btn').addEventListener('click', function() {
+            fetch('/quiz/start/')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message === 'Quiz started!') {
+                        loadQuestion();
+                    }
+                });
+        });
+
+        function loadQuestion() {
+            fetch('/quiz/question/')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('question-container').style.display = 'block';
+                    document.getElementById('question-text').innerText = data.question;
+                    let optionsHtml = '';
+                    data.options.forEach((option, index) => {
+                        optionsHtml += `<label><input type="radio" name="option" value="${option}">${option}</label><br>`;
+                    });
+                    document.getElementById('options').innerHTML = optionsHtml;
+                });
+        }
+
+        document.getElementById('submit-btn').addEventListener('click', function() {
+            const selectedOption = document.querySelector('input[name="option"]:checked')?.value;
+            if (selectedOption) {
+                const questionId = document.getElementById('question-text').innerText;
+                fetch('/quiz/submit/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question_id: questionId, selected_option: selectedOption })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.total_questions >= 10) {
+                        document.getElementById('score').innerText = `You answered ${data.score} out of ${data.total_questions} correctly!`;
+                        document.getElementById('result-container').style.display = 'block';
+                    } else {
+                        loadQuestion();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
